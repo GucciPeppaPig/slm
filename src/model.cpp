@@ -49,3 +49,64 @@ void LanguageModel::print_counts() const {
         }
     }
 }
+
+double LanguageModel::probability(const std::string& w, char c) const {
+    int n_w = 0;   // n(w): how many times w was followed by something
+    int n_wc = 0;  // n(w, c): how many times w was followed by c
+
+    auto it = next_.find(w);
+    if (it != next_.end()) {
+        for (const auto& [ch, n] : it->second) {
+            n_w += n;
+        }
+        auto jt = it->second.find(c);
+        if (jt != it->second.end()) {
+            n_wc = jt->second;
+        }
+    }
+
+    double denominator = n_w + alpha_ * alphabet_.size();
+    if (denominator == 0.0) {
+        return 0.0;  // alpha == 0 and w has no transitions: no distribution
+    }
+    return (n_wc + alpha_) / denominator;
+}
+
+std::string LanguageModel::random_start(std::mt19937& rng) const {
+    std::vector<std::string> grams;
+    std::vector<int> weights;
+    for (const auto& [w, n] : freq_) {
+        grams.push_back(w);
+        weights.push_back(n);
+    }
+    std::discrete_distribution<int> dist(weights.begin(), weights.end());
+    return grams[dist(rng)];
+}
+
+bool LanguageModel::sample_next(const std::string& w, std::mt19937& rng, char& c) const {
+    std::vector<char> chars;
+    std::vector<double> weights;
+    double total = 0.0;
+
+    auto it = next_.find(w);  // may not exist if w never had a follower
+    for (char ch : alphabet_) {
+        double count = 0.0;
+        if (it != next_.end()) {
+            auto jt = it->second.find(ch);
+            if (jt != it->second.end()) {
+                count = jt->second;
+            }
+        }
+        double weight = count + alpha_;   // n(w,c) + alpha
+        chars.push_back(ch);
+        weights.push_back(weight);
+        total += weight;
+    }
+
+    if (total <= 0.0) {
+        return false;  // stuck: nothing can follow w
+    }
+    std::discrete_distribution<int> dist(weights.begin(), weights.end());
+    c = chars[dist(rng)];
+    return true;
+}
