@@ -1,6 +1,8 @@
-#include <iostream>
+#include "model.h"
 
 int main() {
-    std::cout << "slm works\n";
+    LanguageModel m(2, 0.0);
+    m.train_from_file("test.txt");
+    m.print_counts();
     return 0;
 }
