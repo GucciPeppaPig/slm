@@ -1,6 +1,6 @@
 CXX      = g++
 CXXFLAGS = -std=c++17 -Wall -Wextra -O2 -MMD -MP
-OBJS     = src/main.o src/model.o
+OBJS     = src/main.o src/model.o src/generator.o
 
 slm: $(OBJS)
 	$(CXX) $(CXXFLAGS) -o $@ $^
